@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игровой сайт</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        h1, h2 {
+            color: #1E90FF;
+            text-align: center;
+        }
+        nav {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        nav button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #1E90FF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        nav button:hover {
+            background-color: #4682B4;
+        }
+        section {
+            display: none;
+            text-align: center;
+        }
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        td {
+            width: 80px;
+            height: 80px;
+            text-align: center;
+            font-size: 36px;
+            color: #1E90FF;
+            border: 2px solid #4682B4;
+            cursor: pointer;
+        }
+        td:hover {
+            background-color: #ADD8E6;
+        }
+        input, textarea {
+            padding: 10px;
+            border-radius: 5px;
+            border: 2px solid #1E90FF;
+            margin-bottom: 10px;
+            width: 80%;
+            max-width: 400px;
+        }
+        button[type="submit"] {
+            background-color: #1E90FF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #4682B4;
+        }
+        /* Кнопка-смайлик */
+        #emojiButton {
+            background: none; /* Убрать фон */
+            border: none; /* Убрать границы */
+            padding: 0;
+            cursor: pointer;
+            outline: none;
+        }
+        #emoji {
+            font-size: 200px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #emoji:hover {
+            transform: scale(1.1);
+        }
+        /* Убираем синий прямоугольник */
+        #emojiButton:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Приветствую на игровом сайте</h1>
+    
+    <nav>
+        <button onclick="showSection('home')">Главная</button>
+        <button onclick="showSection('guessNumber')">Угадай число</button>
+        <button onclick="showSection('clicker')">Кликер</button>
+        <button onclick="showSection('ticTacToe')">Крестики-нолики</button>
+        <button onclick="showSection('feedback')">Обратная связь</button>
+    </nav>
+
+    <section id="home">
+        <h2>Добро пожаловать!</h2>
+        <p>Выберите игру из меню и начните играть!</p>
+    </section>
+
+    <!-- Угадай число -->
+    <section id="guessNumber">
+        <h2>Угадай число</h2>
+        <input type="number" id="guess" placeholder="Введите число"><br>
+        <button onclick="checkGuess()">Угадать</button>
+        <p id="resultGuess"></p>
+
+        <script>
+            let randomNumber = Math.floor(Math.random() * 10) + 1;
+
+            function checkGuess() {
+                let userGuess = document.getElementById("guess").value;
+                let resultText = "";
+
+                if (userGuess == randomNumber) {
+                    resultText = "Вы угадали!";
+                    randomNumber = Math.floor(Math.random() * 10) + 1; // Сгенерировать новое число
+                } else {
+                    resultText = "Неправильно, попробуйте снова.";
+                }
+
+                document.getElementById("resultGuess").innerText = resultText;
+            }
+        </script>
+    </section>
+
+    <!-- Кликер -->
+    <section id="clicker">
+        <h2>Кликер</h2>
+        <!-- Кнопка-смайлик -->
+        <button id="emojiButton" onclick="increaseScore()">
+            <div id="emoji">😢</div>
+        </button>
+        <p>Счет: <span id="score">0</span></p>
+
+        <script>
+            let score = 0;
+
+            // Смайлики на разных стадиях игры (сначала обычные, потом демонические)
+            const emojis = [
+                "😢", "😟", "😕", "😐", "🙂", "😊", "😄", "😁", "😆", "😂", // первые 50 кликов
+                "😈", "👿", "👹", "👺", "🤡", "💀", "👽", "👻", "👾", "🎃"  // демонические после 50 кликов
+            ];
+            
+            function increaseScore() {
+                score++;
+                document.getElementById("score").innerText = score;
+                
+                // Меняем смайлик каждые 10 кликов
+                let emojiIndex = Math.floor(score / 10);
+                if (emojiIndex > 19) emojiIndex = 19; // Останавливаемся на последнем демоническом смайлике на 200 кликов
+                document.getElementById("emoji").innerText = emojis[emojiIndex];
+            }
+        </script>
+    </section>
+
+    <!-- Крестики-нолики -->
+    <section id="ticTacToe">
+        <h2>Крестики-нолики</h2>
+        <table>
+            <tr>
+                <td onclick="makeMove(0)"></td>
+                <td onclick="makeMove(1)"></td>
+                <td onclick="makeMove(2)"></td>
+            </tr>
+            <tr>
+                <td onclick="makeMove(3)"></td>
+                <td onclick="makeMove(4)"></td>
+                <td onclick="makeMove(5)"></td>
+            </tr>
+            <tr>
+                <td onclick="makeMove(6)"></td>
+                <td onclick="makeMove(7)"></td>
+                <td onclick="makeMove(8)"></td>
+            </tr>
+        </table>
+        <p id="resultTicTacToe"></p>
+        <button onclick="resetGame()">Начать заново</button>
+
+        <script>
+            let board = ["", "", "", "", "", "", "", "", ""];
+            let currentPlayer = "X";
+            let gameActive = true;
+
+            function makeMove(index) {
+                if (board[index] === "" && gameActive) {
+                    board[index] = currentPlayer;
+                    document.querySelectorAll("td")[index].innerText = currentPlayer;
+                    checkWinner();
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                }
+            }
+
+            function checkWinner() {
+                const winConditions = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+
+                winConditions.forEach(condition => {
+                    if (board[condition[0]] === board[condition[1]] &&
+                        board[condition[1]] === board[condition[2]] &&
+                        board[condition[0]] !== "") {
+                        document.getElementById("resultTicTacToe").innerText = board[condition[0]] + " победил!";
+                        gameActive = false;
+                    }
+                });
+
+                if (!board.includes("") && gameActive) {
+                    document.getElementById("resultTicTacToe").innerText = "Ничья!";
+                    gameActive = false;
+                }
+            }
+
+            function resetGame() {
+                board = ["", "", "", "", "", "", "", "", ""];
+                currentPlayer = "X";
+                gameActive = true;
+                document.querySelectorAll("td").forEach(cell => cell.innerText = "");
+                document.getElementById("resultTicTacToe").innerText = "";
+            }
+        </script>
+    </section>
+
+    <!-- Обратная связь -->
+    <section id="feedback">
+        <h2>Обратная связь</h2>
+        <form action="mailto:ilyaparf2021@gmail.com" method="post" enctype="text/plain">
+            <label for="name">Ваше имя:</label><br>
+            <input type="text" id="name" name="name" required><br><br>
+            <label for="feedbackMessage">Ваше сообщение:</label><br>
+            <textarea id="feedbackMessage" name="message" rows="4" required></textarea><br><br>
+            <button type="submit">Отправить</button>
+        </form>
+    </section>
+
+    <script>
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll("section");
+            sections.forEach(section => {
+                section.style.display = section.id === sectionId ? "block" : "none";
+            });
+        }
+
+        // Показываем главную секцию по умолчанию
+        showSection('home');
+    </script>
+</body>
+</html>
