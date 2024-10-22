@@ -1,0 +1,195 @@
+import random
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils import executor
+from collections import defaultdict
+
+# Токен бота
+TOKEN = "7795406318:AAGLlOA-KTu6XJXAWIYPPwJF4Lg-NY3Qv_g"
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
+
+# Хранилище для игр
+games = defaultdict(dict)
+
+# Основная клавиатура для меню
+menu_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+menu_keyboard.add(KeyboardButton("Угадай число"), 
+                  KeyboardButton("Камень, ножницы, бумага"), 
+                  KeyboardButton("Крестики-нолики"))
+menu_keyboard.add(KeyboardButton("Выключить бота"))
+
+# Инлайн-кнопки для выбора режима игры в крестики-нолики
+tictactoe_mode_keyboard = InlineKeyboardMarkup()
+tictactoe_mode_keyboard.add(
+    InlineKeyboardButton("Играть с ботом", callback_data="play_with_bot"),
+    InlineKeyboardButton("Играть с другим игроком", callback_data="play_with_user")
+)
+
+# Инлайн-кнопки для камень, ножницы, бумага
+rps_keyboard = InlineKeyboardMarkup(row_width=3)
+rps_keyboard.add(
+    InlineKeyboardButton("Камень", callback_data="rock"),
+    InlineKeyboardButton("Ножницы", callback_data="scissors"),
+    InlineKeyboardButton("Бумага", callback_data="paper"),
+)
+
+# Инлайн-кнопки для угадай число
+guess_number_keyboard = InlineKeyboardMarkup(row_width=3)
+guess_number_keyboard.add(
+    InlineKeyboardButton("0", callback_data="guess_0"),
+    InlineKeyboardButton("1", callback_data="guess_1"),
+    InlineKeyboardButton("2", callback_data="guess_2"),
+    InlineKeyboardButton("3", callback_data="guess_3"),
+    InlineKeyboardButton("4", callback_data="guess_4"),
+    InlineKeyboardButton("5", callback_data="guess_5"),
+    InlineKeyboardButton("6", callback_data="guess_6"),
+    InlineKeyboardButton("7", callback_data="guess_7"),
+    InlineKeyboardButton("8", callback_data="guess_8"),
+    InlineKeyboardButton("9", callback_data="guess_9"),
+    InlineKeyboardButton("10", callback_data="guess_10"),
+)
+
+# Команда /start
+@dp.message_handler(commands=['start'])
+async def start(message: types.Message):
+    await message.reply("Привет! Выбирай игру или команду:", reply_markup=menu_keyboard)
+
+# Крестики-нолики
+@dp.message_handler(lambda message: message.text == "Крестики-нолики")
+async def tictactoe(message: types.Message):
+    await message.reply("Выберите режим игры:", reply_markup=tictactoe_mode_keyboard)
+
+# Угадай число
+@dp.message_handler(lambda message: message.text == "Угадай число")
+async def guess_number(message: types.Message):
+    await message.reply("Выбери число от 0 до 10:", reply_markup=guess_number_keyboard)
+
+# Камень, ножницы, бумага
+@dp.message_handler(lambda message: message.text == "Камень, ножницы, бумага")
+async def rock_paper_scissors(message: types.Message):
+    await message.reply("Выбери: Камень, Ножницы или Бумага:", reply_markup=rps_keyboard)
+
+# Обработка выбора камень, ножницы, бумага
+@dp.callback_query_handler(lambda c: c.data in ["rock", "scissors", "paper"])
+async def process_rps_choice(callback_query: types.CallbackQuery):
+    user_choice = callback_query.data
+    bot_choice = random.choice(["rock", "scissors", "paper"])
+    
+    if user_choice == bot_choice:
+        result = "Ничья!"
+    elif (user_choice == "rock" and bot_choice == "scissors") or \
+         (user_choice == "scissors" and bot_choice == "paper") or \
+         (user_choice == "paper" and bot_choice == "rock"):
+        result = "Ты победил!"
+    else:
+        result = "Бот победил!"
+
+    await bot.send_message(callback_query.from_user.id, 
+                           f"Ты выбрал: {user_choice}\nБот выбрал: {bot_choice}\n{result}")
+
+# Обработка выбора числа
+@dp.callback_query_handler(lambda c: c.data.startswith("guess_"))
+async def process_guess(callback_query: types.CallbackQuery):
+    user_guess = int(callback_query.data.split('_')[1])
+    random_number = random.randint(0, 10)  # Случайное число от 0 до 10
+
+    if user_guess == random_number:
+        await bot.send_message(callback_query.from_user.id, f"Поздравляю! Ты угадал число: {random_number}!")
+    else:
+        await bot.send_message(callback_query.from_user.id, f"Не угадал. Было число: {random_number}.")
+
+# Обработка выбора режима игры с ботом
+@dp.callback_query_handler(lambda c: c.data == "play_with_bot")
+async def play_with_bot(callback_query: types.CallbackQuery):
+    user_id = callback_query.from_user.id
+    games[user_id] = {
+        'playing': True,
+        'board': [' ' for _ in range(9)],
+        'turn': 'X'
+    }
+    await bot.send_message(user_id, "Игра с ботом началась! Ты играешь крестиками.", 
+                           reply_markup=create_tictactoe_keyboard(games[user_id]['board']))
+
+# Обработка хода игрока в крестики-нолики
+@dp.callback_query_handler(lambda c: c.data.startswith("move_"))
+async def make_move(callback_query: types.CallbackQuery):
+    user_id = callback_query.from_user.id
+    move = int(callback_query.data.split('_')[1])
+    game = games.get(user_id)
+
+    if not game or not game['playing']:
+        await callback_query.answer("Игра не начата. Выберите 'Крестики-нолики' в меню.")
+        return
+
+    if game['board'][move] != ' ':
+        await callback_query.answer("Неверный ход, клетка уже занята!")
+        return
+
+    # Ход игрока
+    game['board'][move] = game['turn']
+
+    # Проверка победителя
+    if check_winner(game['board']):
+        await bot.send_message(user_id, f"Ты победил!\n{render_board(game['board'])}")
+        game['playing'] = False
+        return
+
+    # Проверка на ничью
+    if ' ' not in game['board']:
+        await bot.send_message(user_id, f"Ничья!\n{render_board(game['board'])}")
+        game['playing'] = False
+        return
+
+    # Передача хода боту
+    bot_move = random.choice([i for i in range(9) if game['board'][i] == ' '])
+    game['board'][bot_move] = 'O'
+
+    # Проверка победы бота
+    if check_winner(game['board']):
+        await bot.send_message(user_id, f"Бот победил!\n{render_board(game['board'])}")
+        game['playing'] = False
+    else:
+        await bot.edit_message_reply_markup(user_id, callback_query.message.message_id,
+                                            reply_markup=create_tictactoe_keyboard(game['board']))
+
+# Создание клавиатуры для крестиков-ноликов
+def create_tictactoe_keyboard(board):
+    keyboard = InlineKeyboardMarkup(row_width=3)
+    for i, cell in enumerate(board):
+        button_text = cell if cell != ' ' else str(i + 1)
+        keyboard.insert(InlineKeyboardButton(button_text, callback_data=f"move_{i}"))
+    return keyboard
+
+# Показ доски
+def render_board(board):
+    return '\n'.join([f"{board[i*3]} | {board[i*3+1]} | {board[i*3+2]}" for i in range(3)])
+
+# Проверка победы
+def check_winner(board):
+    win_combinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ]
+    for combo in win_combinations:
+        if board[combo[0]] == board[combo[1]] == board[combo[2]] != ' ':
+            return True
+    return False
+
+# Команда выключения бота (только для администратора)
+@dp.message_handler(lambda message: message.text == "Выключить бота")
+async def shutdown_bot(message: types.Message):
+    user_id = message.from_user.id
+    admins = [123456789, 7687154828]  # Замените на реальные ID администраторов
+
+    if user_id in admins:
+        await message.reply("Бот выключается...")
+        await bot.close()
+    else:
+        await message.reply("У вас нет прав для выключения бота.")
+
+# Запуск бота
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
